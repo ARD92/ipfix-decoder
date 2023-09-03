@@ -49,31 +49,31 @@ type IpfixTempData struct {
 type IpfixData struct {
 	SourceIP          string
 	DestIP            string
-	Protocol          string
-	IpTos             string
-	SourcePort        string
-	DestPort          string
-	IcmpType          string
-	InputSnmp         string
-	SrcVlan           string
-	SrcMask           string
-	DstMask           string
-	SrcAs             string
-	DstAs             string
+	Protocol          int64
+	IpTos             int64
+	SourcePort        int64
+	DestPort          int64
+	IcmpType          int64
+	InputSnmp         int64
+	SrcVlan           int64
+	SrcMask           int64
+	DstMask           int64
+	SrcAs             int64
+	DstAs             int64
 	IpNextHop         string
-	TcpFlags          string
-	OutSnmp           string
-	IpTTLMin          string
-	IpTTLMax          string
-	FlowendReason     string
-	IpVersion         string
+	TcpFlags          int64
+	OutSnmp           int64
+	IpTTLMin          int64
+	IpTTLMax          int64
+	FlowendReason     int64
+	IpVersion         int64
 	BGPNextHop        string
-	Direction         string
-	Dot1qVlanId       string
-	Dot1qCustVlanId   string
-	Ipv4Id            string
-	Bytes             string
-	Pkts              string
+	Direction         int64
+	Dot1qVlanId       int64
+	Dot1qCustVlanId   int64
+	Ipv4Id            int64
+	Bytes             int64
+	Pkts              int64
 	FlowStartMilliSec string
 	FlowEndMilliSec   string
 }
@@ -161,38 +161,37 @@ func decodeIpfix(payload []byte) {
 			fmt.Println("Decoding inline jflow flow packet... \n")
 			fmt.Println(iFixFlowSetId)
 			//fmt.Println(payload)
-			iflow.SourceIP = hex.EncodeToString(payload[24:28])
-			iflow.DestIP = hex.EncodeToString(payload[28:32])
-			iflow.IpTos = hex.EncodeToString(payload[32:33])
-			iflow.Protocol = hex.EncodeToString(payload[33:34])
-			iflow.SourcePort = hex.EncodeToString(payload[34:36])
-			iflow.DestPort = hex.EncodeToString(payload[36:38])
-			iflow.IcmpType = hex.EncodeToString(payload[38:40])
-			iflow.InputSnmp = hex.EncodeToString(payload[40:44])
-			iflow.SrcVlan = hex.EncodeToString(payload[44:46])
-			iflow.SrcMask = hex.EncodeToString(payload[46:47])
-			iflow.DstMask = hex.EncodeToString(payload[47:48])
-			iflow.SrcAs = hex.EncodeToString(payload[48:52])
-			iflow.DstAs = hex.EncodeToString(payload[52:56])
-			iflow.IpNextHop = hex.EncodeToString(payload[56:62])
-			iflow.TcpFlags = hex.EncodeToString(payload[62:63])
-			iflow.OutSnmp = hex.EncodeToString(payload[63:67])
-			iflow.IpTTLMin = hex.EncodeToString(payload[67:68])
-			iflow.IpTTLMax = hex.EncodeToString(payload[68:69])
-			iflow.FlowendReason = hex.EncodeToString(payload[69:70])
-			iflow.IpVersion = hex.EncodeToString(payload[70:71])
-			iflow.BGPNextHop = hex.EncodeToString(payload[71:75])
-			iflow.Direction = hex.EncodeToString(payload[75:76])
-			iflow.Dot1qVlanId = hex.EncodeToString(payload[76:78])
-			iflow.Dot1qCustVlanId = hex.EncodeToString(payload[78:80])
-			iflow.Ipv4Id = hex.EncodeToString(payload[80:84])
-			iflow.Bytes = hex.EncodeToString(payload[84:92])
-			iflow.Pkts = hex.EncodeToString(payload[92:100])
+			iflow.SourceIP = parseIpv4Bytes(payload[20:24])
+			iflow.DestIP = parseIpv4Bytes(payload[24:28])
+			iflow.IpTos = parsePortBytes(payload[28:29])
+			iflow.Protocol = parsePortBytes(payload[29:30])
+			iflow.SourcePort = parsePortBytes(payload[30:32])
+			iflow.DestPort = parsePortBytes(payload[32:34])
+			iflow.IcmpType = parsePortBytes(payload[34:36])
+			iflow.InputSnmp = parsePortBytes(payload[36:40])
+			iflow.SrcVlan = parsePortBytes(payload[40:42])
+			iflow.SrcMask = parsePortBytes(payload[42:43])
+			iflow.DstMask = parsePortBytes(payload[43:44])
+			iflow.SrcAs = parsePortBytes(payload[44:48])
+			iflow.DstAs = parsePortBytes(payload[48:52])
+			iflow.IpNextHop = parseIpv4Bytes(payload[52:56])
+			iflow.TcpFlags = parsePortBytes(payload[56:57])
+			iflow.OutSnmp = parsePortBytes(payload[57:61])
+			iflow.IpTTLMin = parsePortBytes(payload[61:62])
+			iflow.IpTTLMax = parsePortBytes(payload[62:63])
+			iflow.FlowendReason = parsePortBytes(payload[63:64])
+			iflow.IpVersion = parsePortBytes(payload[64:65])
+			iflow.BGPNextHop = parseIpv4Bytes(payload[65:69])
+			iflow.Direction = parsePortBytes(payload[69:70])
+			iflow.Dot1qVlanId = parsePortBytes(payload[70:72])
+			iflow.Dot1qCustVlanId = parsePortBytes(payload[72:74])
+			iflow.Ipv4Id = parsePortBytes(payload[74:78])
+			iflow.Bytes = parsePortBytes(payload[78:86])
+			iflow.Pkts = parsePortBytes(payload[86:92])
 			//iflow.FlowStartMilliSec = hex.EncodeToString(payload[132:136])
 			//iflow.FlowEndMilliSec = hex.EncodeToString(payload[136:140])
 			log.Println("flow data hexbytes: ", iflow)
 			fmt.Println("======== Flow data ============\n")
-			fmt.Println(iflow)
 		} else {
 			fmt.Println("Unable to decode Ipfix Packet... \n")
 			fmt.Println(iFixFlowSetId)
