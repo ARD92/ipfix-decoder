@@ -15,6 +15,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/gosuri/uilive"
 	"log"
 	"net"
 	"os"
@@ -49,11 +50,11 @@ type IpfixTempData struct {
 type IpfixData struct {
 	SourceIP          string
 	DestIP            string
-	Protocol          int64
-	IpTos             int64
+	IpTos             string
+	Protocol          string
 	SourcePort        int64
 	DestPort          int64
-	IcmpType          int64
+	IcmpType          string
 	InputSnmp         int64
 	SrcVlan           int64
 	SrcMask           int64
@@ -61,7 +62,7 @@ type IpfixData struct {
 	SrcAs             int64
 	DstAs             int64
 	IpNextHop         string
-	TcpFlags          int64
+	TcpFlags          string
 	OutSnmp           int64
 	IpTTLMin          int64
 	IpTTLMax          int64
@@ -135,18 +136,44 @@ func decodeIpv4(payload []byte) (gopacket.Packet, Ipv4Flow) {
 	return packet, v4flow
 }
 
+func printFlowInfo(iflow IpfixData, writer *uilive.Writer) {
+	fmt.Fprintf(writer, "Source IP: %s\n", iflow.SourceIP)
+	fmt.Fprintf(writer, "Destination IP: %s\n", iflow.DestIP)
+	fmt.Fprintf(writer, "IP TOS: %s\n", iflow.IpTos)
+	fmt.Fprintf(writer, "Protocol: %s\n", iflow.Protocol)
+	fmt.Fprintf(writer, "Source port: %d\n", iflow.SourcePort)
+	fmt.Fprintf(writer, "Dest Port: %d\n", iflow.DestPort)
+	fmt.Fprintf(writer, "ICMP type: %s\n", iflow.IcmpType)
+	fmt.Fprintf(writer, "Input Snmp: %d\n", iflow.InputSnmp)
+	fmt.Fprintf(writer, "SrcVlan: %d\n", iflow.SrcVlan)
+	fmt.Fprintf(writer, "Src Mask: %d\n", iflow.SrcMask)
+	fmt.Fprintf(writer, "Dst Mask: %d\n", iflow.DstMask)
+	fmt.Fprintf(writer, "Src AS: %d\n", iflow.SrcAs)
+	fmt.Fprintf(writer, "Dst AS: %d\n", iflow.DstAs)
+	fmt.Fprintf(writer, "IP nexthop: %s\n", iflow.IpNextHop)
+	fmt.Fprintf(writer, "Tcp flags: %s\n", iflow.TcpFlags)
+	fmt.Fprintf(writer, "Out Snmp: %d\n", iflow.OutSnmp)
+	fmt.Fprintf(writer, "IP TTL min: %d\n", iflow.IpTTLMin)
+	fmt.Fprintf(writer, "IP TTL max: %d\n", iflow.IpTTLMax)
+	fmt.Fprintf(writer, "Flowend Reason: %d\n", iflow.FlowendReason)
+	fmt.Fprintf(writer, "IP version: %d\n", iflow.IpVersion)
+	fmt.Fprintf(writer, "BGP nexthop: %s\n", iflow.BGPNextHop)
+	fmt.Fprintf(writer, "Direction: %d\n", iflow.Direction)
+	fmt.Fprintf(writer, "Dot1qVlanId: %d\n", iflow.Dot1qVlanId)
+	fmt.Fprintf(writer, "Dot1qCustVlanId: %d\n", iflow.Dot1qCustVlanId)
+	fmt.Fprintf(writer, "Ipv4Id: %d\n", iflow.Ipv4Id)
+	fmt.Fprintf(writer, "Bytes: %d\n", iflow.Bytes)
+	fmt.Fprintf(writer, "Pkts: %d\n", iflow.Pkts)
+}
+
 // Decode IPfix packet
-func decodeIpfix(payload []byte) {
+func decodeIpfix(payload []byte, writer *uilive.Writer) {
 	var iflow IpfixData
 	iFixVersion := payload[0:2]
 	if hex.EncodeToString(iFixVersion) == "000a" {
-		log.Println("Decoding IPFIX packet...")
-		//fmt.Println(hex.EncodeToString(payload))
 		iFixFlowSetId := hex.EncodeToString(payload[16:18])
-		//fmt.Println(iFixFlowSetId)
 		if iFixFlowSetId == "0002" {
 			log.Println(" received template packet ....\n")
-			fmt.Println(" received template packet ....\n")
 			template.Version = hex.EncodeToString(iFixVersion)
 			template.Length = hex.EncodeToString(payload[2:4])
 			template.Timestamp = hex.EncodeToString(payload[4:8])
@@ -158,16 +185,22 @@ func decodeIpfix(payload []byte) {
 			template.FieldCount = hex.EncodeToString(payload[22:24])
 			log.Println("template hex bytes: ", template)
 		} else if iFixFlowSetId == template.TemplateId {
-			fmt.Println("Decoding inline jflow flow packet... \n")
-			fmt.Println(iFixFlowSetId)
-			//fmt.Println(payload)
+			log.Println("Decoding inline jflow flow packet... \n")
 			iflow.SourceIP = parseIpv4Bytes(payload[20:24])
 			iflow.DestIP = parseIpv4Bytes(payload[24:28])
-			iflow.IpTos = parsePortBytes(payload[28:29])
-			iflow.Protocol = parsePortBytes(payload[29:30])
+			iflow.IpTos = hex.EncodeToString(payload[28:29])
+			proto := parsePortBytes(payload[29:30])
+			switch proto {
+			case 1:
+				iflow.Protocol = "ICMP"
+			case 6:
+				iflow.Protocol = "UDP"
+			case 7:
+				iflow.Protocol = "TCP"
+			}
 			iflow.SourcePort = parsePortBytes(payload[30:32])
 			iflow.DestPort = parsePortBytes(payload[32:34])
-			iflow.IcmpType = parsePortBytes(payload[34:36])
+			iflow.IcmpType = hex.EncodeToString(payload[34:36])
 			iflow.InputSnmp = parsePortBytes(payload[36:40])
 			iflow.SrcVlan = parsePortBytes(payload[40:42])
 			iflow.SrcMask = parsePortBytes(payload[42:43])
@@ -175,7 +208,7 @@ func decodeIpfix(payload []byte) {
 			iflow.SrcAs = parsePortBytes(payload[44:48])
 			iflow.DstAs = parsePortBytes(payload[48:52])
 			iflow.IpNextHop = parseIpv4Bytes(payload[52:56])
-			iflow.TcpFlags = parsePortBytes(payload[56:57])
+			iflow.TcpFlags = hex.EncodeToString(payload[56:57])
 			iflow.OutSnmp = parsePortBytes(payload[57:61])
 			iflow.IpTTLMin = parsePortBytes(payload[61:62])
 			iflow.IpTTLMax = parsePortBytes(payload[62:63])
@@ -191,21 +224,18 @@ func decodeIpfix(payload []byte) {
 			//iflow.FlowStartMilliSec = hex.EncodeToString(payload[132:136])
 			//iflow.FlowEndMilliSec = hex.EncodeToString(payload[136:140])
 			log.Println("flow data hexbytes: ", iflow)
-			fmt.Println("======== Flow data ============\n")
+			printFlowInfo(iflow, writer)
 		} else {
-			fmt.Println("Unable to decode Ipfix Packet... \n")
-			fmt.Println(iFixFlowSetId)
-			fmt.Println(payload)
 			log.Println("Unable to decode Ipfix Packet... \n")
+			log.Println(payload)
 		}
 	} else {
-		log.Println("Not an IPFIX packet ... \n")
-		fmt.Println("Not an IPFIX packet ... \n")
+		log.Println("Not an IPFIX packet, skipping ... \n")
 	}
 }
 
 // Decode incoming IP pkt
-func decodePacket(packet gopacket.Packet) {
+func decodePacket(packet gopacket.Packet, writer *uilive.Writer) {
 	udpLayer := packet.Layer(layers.LayerTypeUDP)
 	var uDestPort layers.UDPPort
 	if udpLayer != nil {
@@ -217,7 +247,7 @@ func decodePacket(packet gopacket.Packet) {
 		appLayer := packet.ApplicationLayer()
 		if appLayer != nil {
 			payload := appLayer.Payload()
-			decodeIpfix(payload)
+			decodeIpfix(payload, writer)
 		}
 	}
 }
@@ -243,9 +273,11 @@ func main() {
 			log.Fatal(err)
 		}
 		defer handle.Close()
+		writer := uilive.New()
+		writer.Start()
 		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 		for packet := range packetSource.Packets() {
-			go decodePacket(packet)
+			go decodePacket(packet, writer)
 		}
 	}
 }
