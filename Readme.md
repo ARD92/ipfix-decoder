@@ -45,4 +45,32 @@ root@vmx1# run show services accounting flow inline-jflow fpc-slot 0
 
 ```
 ./ipfix-decoder -i eth2 -p 2055
+
+Source IP: 45.1.1.1
+Destination IP: 55.1.1.1
+IP TOS: 00
+Protocol: ICMP
+Source port: 0
+Dest Port: 0
+ICMP type: 0800
+Input Snmp: 571
+SrcVlan: 0
+Src Mask: 32
+Dst Mask: 0
+Src AS: 13979
+Dst AS: 4294967295
+IP nexthop: 10.1.1.11
+Tcp flags: 00
+Out Snmp: 563
+IP TTL min: 64
+IP TTL max: 64
+Flowend Reason: 2
+IP version: 4
+BGP nexthop: 0.0.0.0
+Direction: 255
+Dot1qVlanId: 0
+Dot1qCustVlanId: 0
+Ipv4Id: 0
+Bytes: 141456
+Pkts: 0
 ```
